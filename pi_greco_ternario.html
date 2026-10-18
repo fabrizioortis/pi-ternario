@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generatore Pi Greco (Base 3)</title>
+    <!-- Utilizziamo Tailwind CSS per un design moderno e reattivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Definizione delle variabili CSS globali per l'aggiornamento in tempo reale */
+        :root {
+            --color-0: #ff0000;
+            --color-1: #00ff00;
+            --color-2: #0000ff;
+            --out-width: 100%;
+            --out-height: 400px;
+        }
+
+        /* Classi dinamiche agganciate alle variabili CSS per colorare le cifre */
+        .digit-0 { color: var(--color-0); }
+        .digit-1 { color: var(--color-1); }
+        .digit-2 { color: var(--color-2); }
+        .digit-dot { color: #d1d5db; } /* Colore grigio chiaro per il punto */
+
+        /* Stile del contenitore di output */
+        #output-box {
+            width: var(--out-width);
+            height: var(--out-height);
+            overflow-wrap: break-word;
+            word-break: break-all;
+            overflow-y: auto;
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+
+        /* Personalizzazione della scrollbar per un look premium */
+        #output-box::-webkit-scrollbar {
+            width: 8px;
+        }
+        #output-box::-webkit-scrollbar-track {
+            background: #1f2937; 
+            border-radius: 4px;
+        }
+        #output-box::-webkit-scrollbar-thumb {
+            background: #4b5563; 
+            border-radius: 4px;
+        }
+        #output-box::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; 
+        }
+
+        /* Disabilitazione della selezione durante la generazione massiva */
+        .no-select {
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col items-center p-4 sm:p-8">
+
+    <div class="max-w-6xl w-full flex flex-col gap-6">
+        
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                Pi Greco In Base 3
+            </h1>
+            <p class="text-gray-400 mt-2">Generatore spigot a flusso continuo infinito</p>
+        </div>
+
+        <!-- Pannello di Controllo -->
+        <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Azioni -->
+            <div class="flex flex-col justify-center gap-4">
+                <h2 class="text-lg font-semibold text-gray-300 border-b border-gray-700 pb-2">Controlli</h2>
+                <div class="flex flex-wrap gap-2">
+                    <button id="btn-start" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg transition shadow-md">
+                        Avvia
+                    </button>
+                    <button id="btn-pause" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-medium py-2 px-4 rounded-lg transition shadow-md opacity-50 cursor-not-allowed" disabled>
+                        Pausa
+                    </button>
+                    <button id="btn-reset" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-medium py-2 px-4 rounded-lg transition shadow-md mt-2">
+                        Azzera Output
+                    </button>
+                </div>
+            </div>
+
+            <!-- Colori -->
+            <div class="flex flex-col justify-center gap-4">
+                <h2 class="text-lg font-semibold text-gray-300 border-b border-gray-700 pb-2">Colori Cifre</h2>
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-gray-300 font-medium">Cifra 0</label>
+                        <input type="color" id="color-0" value="#ff0000" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="text-gray-300 font-medium">Cifra 1</label>
+                        <input type="color" id="color-1" value="#00ff00" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="text-gray-300 font-medium">Cifra 2</label>
+                        <input type="color" id="color-2" value="#0000ff" class="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dimensioni Riquadro -->
+            <div class="flex flex-col justify-center gap-4">
+                <h2 class="text-lg font-semibold text-gray-300 border-b border-gray-700 pb-2">Dimensioni Output</h2>
+                
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between">
+                        <label class="text-sm text-gray-400">Larghezza: <span id="width-label" class="font-bold text-white">100%</span></label>
+                    </div>
+                    <input type="range" id="width-range" min="30" max="100" value="100" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="flex flex-col gap-1 mt-2">
+                    <div class="flex justify-between">
+                        <label class="text-sm text-gray-400">Altezza: <span id="height-label" class="font-bold text-white">400px</span></label>
+                    </div>
+                    <input type="range" id="height-range" min="200" max="800" value="400" step="10" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="flex items-center gap-2 mt-2">
+                    <input type="checkbox" id="auto-scroll" checked class="w-4 h-4 accent-emerald-500 cursor-pointer">
+                    <label for="auto-scroll" class="text-sm text-gray-400 cursor-pointer">Auto-scroll in basso</label>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Container Output -->
+        <div class="flex justify-center w-full mt-4">
+            <!-- Il div effettivo con le dimensioni dinamiche -->
+            <div id="output-box" class="bg-gray-950 border-2 border-gray-700 rounded-xl p-4 font-mono text-lg sm:text-xl shadow-inner leading-relaxed tracking-widest no-select">
+                <!-- Le cifre verranno inserite qui -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script Logica JS -->
+    <script>
+        // DOM Elements
+        const btnStart = document.getElementById('btn-start');
+        const btnPause = document.getElementById('btn-pause');
+        const btnReset = document.getElementById('btn-reset');
+        
+        const outputBox = document.getElementById('output-box');
+        const autoScrollCheck = document.getElementById('auto-scroll');
+
+        const color0Input = document.getElementById('color-0');
+        const color1Input = document.getElementById('color-1');
+        const color2Input = document.getElementById('color-2');
+
+        const widthRange = document.getElementById('width-range');
+        const heightRange = document.getElementById('height-range');
+        const widthLabel = document.getElementById('width-label');
+        const heightLabel = document.getElementById('height-label');
+
+        // State variables
+        let generator = null;
+        let isRunning = false;
+        let isFirstDigit = true;
+        let animationFrameId = null;
+
+        // --- CORE ALGORITHM ---
+        function* pi_ternario_infinito() {
+            let q = 1n, r = 0n, t = 1n, k = 1n, l = 3n;
+            let base = 3n;
+            while (true) {
+                let n_lower = (3n * q + r) / t;
+                let n_upper = (4n * q + r) / t;
+                
+                if (n_lower === n_upper) {
+                    yield Number(n_lower);
+                    let next_q = base * q;
+                    let next_r = base * (r - n_lower * t);
+                    q = next_q; 
+                    r = next_r;
+                } else {
+                    let next_q = q * k;
+                    let next_r = (2n * q + r) * l;
+                    let next_t = t * l;
+                    let next_k = k + 1n;
+                    let next_l = l + 2n;
+                    q = next_q; 
+                    r = next_r; 
+                    t = next_t; 
+                    k = next_k; 
+                    l = next_l;
+                }
+            }
+        }
+
+        // --- EVENT LISTENERS: SETTINGS ---
+
+        // Gestione Colori
+        function updateColor(digit, value) {
+            document.documentElement.style.setProperty(`--color-${digit}`, value);
+        }
+        color0Input.addEventListener('input', (e) => updateColor(0, e.target.value));
+        color1Input.addEventListener('input', (e) => updateColor(1, e.target.value));
+        color2Input.addEventListener('input', (e) => updateColor(2, e.target.value));
+
+        // Gestione Dimensioni Riquadro
+        widthRange.addEventListener('input', (e) => {
+            const val = `${e.target.value}%`;
+            document.documentElement.style.setProperty('--out-width', val);
+            widthLabel.textContent = val;
+        });
+
+        heightRange.addEventListener('input', (e) => {
+            const val = `${e.target.value}px`;
+            document.documentElement.style.setProperty('--out-height', val);
+            heightLabel.textContent = val;
+        });
+
+        // --- GENERATION LOGIC ---
+
+        // Inizializza o reinizializza il generatore
+        function initGenerator() {
+            generator = pi_ternario_infinito();
+            isFirstDigit = true;
+            outputBox.innerHTML = '';
+        }
+
+        // Funzione per generare un blocco di cifre senza bloccare la UI
+        function generateChunk() {
+            if (!isRunning) return;
+
+            let htmlChunk = "";
+            // Generiamo un piccolo gruppo di cifre per ogni frame (es. 15 alla volta)
+            // L'operazione BigInt diventa più onerosa man mano che le variabili crescono, 
+            // quindi un blocco piccolo mantiene la UI reattiva.
+            const chunkSize = 15; 
+
+            for (let i = 0; i < chunkSize; i++) {
+                const { value: digit, done } = generator.next();
+                if (done) break;
+
+                if (isFirstDigit) {
+                    if (digit === 3) {
+                        // Formattazione speciale del 10 iniziale
+                        htmlChunk += `<span class="digit-1">1</span><span class="digit-0">0</span><span class="digit-dot">.</span>`;
+                    } else {
+                        htmlChunk += `<span class="digit-${digit}">${digit}</span><span class="digit-dot">.</span>`;
+                    }
+                    isFirstDigit = false;
+                } else {
+                    htmlChunk += `<span class="digit-${digit}">${digit}</span>`;
+                }
+            }
+
+            // Inseriamo il blocco generato nel DOM in una singola operazione
+            outputBox.insertAdjacentHTML('beforeend', htmlChunk);
+
+            // Scroll automatico
+            if (autoScrollCheck.checked) {
+                outputBox.scrollTop = outputBox.scrollHeight;
+            }
+
+            // Richiama il prossimo frame se è ancora in esecuzione
+            animationFrameId = requestAnimationFrame(generateChunk);
+        }
+
+        // --- BUTTON EVENT LISTENERS ---
+
+        btnStart.addEventListener('click', () => {
+            if (!generator) initGenerator();
+            
+            isRunning = true;
+            
+            // UI Aggiornamento pulsanti
+            btnStart.disabled = true;
+            btnStart.classList.add('opacity-50', 'cursor-not-allowed');
+            btnPause.disabled = false;
+            btnPause.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // Avvia Loop
+            animationFrameId = requestAnimationFrame(generateChunk);
+        });
+
+        btnPause.addEventListener('click', () => {
+            isRunning = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            
+            // UI Aggiornamento pulsanti
+            btnPause.disabled = true;
+            btnPause.classList.add('opacity-50', 'cursor-not-allowed');
+            btnStart.disabled = false;
+            btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+
+        btnReset.addEventListener('click', () => {
+            // Ferma l'esecuzione se è in corso
+            isRunning = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            // Reinizializza
+            initGenerator();
+
+            // UI Aggiornamento pulsanti
+            btnStart.disabled = false;
+            btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
+            btnPause.disabled = true;
+            btnPause.classList.add('opacity-50', 'cursor-not-allowed');
+        });
+
+        // Inizializza lo stato dell'app (ma non avvia la generazione)
+        initGenerator();
+
+    </script>
+</body>
+</html>
